@@ -3,7 +3,6 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?logo=jetpackcompose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-2.8-3DDC84)
-![WorkManager](https://img.shields.io/badge/WorkManager-background_sync-3DDC84)
 ![Platform](https://img.shields.io/badge/platform-Android_8.0%2B-3DDC84?logo=android&logoColor=white)
 
 A quiet, text-only way to follow YouTube channels on Android, built with Kotlin and Jetpack Compose. Add a channel, and QuietFeed shows you only what it uploads from that moment on: titles and dates, with no thumbnails, no avatars, no recommendations and no Shorts.
