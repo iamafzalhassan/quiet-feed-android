@@ -18,8 +18,7 @@ import kotlinx.coroutines.launch
 class ChannelsViewModel(private val channelRepository: ChannelRepository, private val feedSync: FeedSync) : ViewModel() {
     private val screenState: MutableStateFlow<ChannelsUiState> = MutableStateFlow(ChannelsUiState())
 
-    val state: StateFlow<ChannelsUiState> = combine(channelRepository.observeChannels(), screenState) { channels, screen -> screen.copy(isLoading = false, channels = channels) }
-        .stateIn(initialValue = ChannelsUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed(STATE_STOP_TIMEOUT_MILLIS))
+    val state: StateFlow<ChannelsUiState> = combine(channelRepository.observeChannels(), screenState) { channels, screen -> screen.copy(isLoading = false, channels = channels) }.stateIn(initialValue = ChannelsUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed(STATE_STOP_TIMEOUT_MILLIS))
 
     fun onEvent(event: ChannelsEvent) {
         when (event) {
@@ -54,7 +53,7 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
         if (screenState.value.isRefreshing) return
         screenState.update { state -> state.copy(isRefreshing = true) }
         viewModelScope.launch {
-            val result = feedSync.syncAll()
+            val result = feedSync.syncAll().result
             screenState.update { state ->
                 state.copy(
                     isRefreshing = false,

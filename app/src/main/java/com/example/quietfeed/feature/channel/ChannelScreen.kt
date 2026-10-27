@@ -14,10 +14,17 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
@@ -31,6 +38,7 @@ import com.example.quietfeed.ui.components.display.AppTopBar
 import com.example.quietfeed.ui.components.feedback.AppSnackbarHost
 import com.example.quietfeed.ui.components.feedback.ScreenEmptyState
 import com.example.quietfeed.ui.components.feedback.rememberAppSnackbarState
+import com.example.quietfeed.ui.components.sheet.ConfirmSheet
 import com.example.quietfeed.ui.format.DateFormat
 import com.example.quietfeed.ui.theme.AppColors
 import com.example.quietfeed.ui.theme.AppSpacing
@@ -45,10 +53,27 @@ fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Mod
     val scope = rememberCoroutineScope()
     val snackbarState = rememberAppSnackbarState()
     val videoLauncher = rememberVideoLauncher()
+    var isClearSheetOpen by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(state.feedback) {
+        val feedback = state.feedback ?: return@LaunchedEffect
+        scope.launch {
+            when (feedback) {
+                ChannelFeedback.VIDEOS_CLEARED -> snackbarState.showSuccess(resources.getString(R.string.videos_cleared))
+            }
+        }
+        viewModel.onEvent(ChannelEvent.DismissFeedback)
+    }
 
     Box(modifier = modifier.fillMaxSize().background(AppColors.surfaceBase)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(onBack = onBack, title = state.channelName)
+            AppTopBar(onBack = onBack, title = state.channelName) {
+                if (state.videos.isNotEmpty()) {
+                    IconButton(onClick = { isClearSheetOpen = true }) {
+                        Icon(contentDescription = stringResource(R.string.action_clear_videos), imageVector = Icons.Outlined.ClearAll, tint = AppColors.primary)
+                    }
+                }
+            }
             when {
                 state.isLoading -> Unit
                 state.videos.isEmpty() -> ScreenEmptyState(
@@ -69,6 +94,20 @@ fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Mod
             }
         }
         AppSnackbarHost(modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), state = snackbarState)
+    }
+
+    if (isClearSheetOpen) {
+        ConfirmSheet(
+            confirmLabel = stringResource(R.string.action_clear),
+            isDestructive = true,
+            message = stringResource(R.string.clear_videos_message, state.channelName),
+            onConfirm = {
+                isClearSheetOpen = false
+                viewModel.onEvent(ChannelEvent.ClearVideos)
+            },
+            onDismiss = { isClearSheetOpen = false },
+            title = stringResource(R.string.clear_videos_title),
+        )
     }
 }
 

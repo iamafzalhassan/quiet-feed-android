@@ -6,7 +6,9 @@
     <string name="action_add_channel">Add Channel</string>
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_clear">Clear</string>
     <string name="action_clear_selection">Clear selection</string>
+    <string name="action_clear_videos">Clear videos</string>
     <string name="action_remove">Remove</string>
     <string name="action_rename">Rename</string>
     <string name="action_save">Save</string>
@@ -33,6 +35,17 @@
     <string name="remove_channel_message">Stop following %1$s? Its saved videos are deleted from this device.</string>
     <string name="remove_channel_title">Remove channel</string>
     <string name="rename_channel_title">Rename channel</string>
+
+    <string name="notification_channel_description">Tells you when a channel you follow uploads a new video.</string>
+    <string name="notification_channel_name">New videos</string>
+    <plurals name="notification_new_videos">
+        <item quantity="one">%d new video</item>
+        <item quantity="other">%d new videos</item>
+    </plurals>
+
+    <string name="clear_videos_message">Clear every saved video from %1$s? Only videos uploaded from now on will show up.</string>
+    <string name="clear_videos_title">Clear videos</string>
+    <string name="videos_cleared">Videos cleared. New uploads will show up here.</string>
 
     <string name="video_open_failed">No app on this device can open YouTube videos. Install YouTube or a browser and try again.</string>
     <string name="videos_empty_message">No new videos since you added this channel.</string>

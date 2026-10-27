@@ -1,7 +1,7 @@
 package com.example.quietfeed.data.remote
 
 import android.util.Xml
-import com.example.quietfeed.common.retrying
+import com.example.quietfeed.common.attempt
 import com.example.quietfeed.domain.channel.ChannelReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,12 +9,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-private const val FEED_ATTEMPTS: Int = 3
 private const val HTTP_NOT_FOUND: Int = 404
 private const val HTTP_SERVER_ERROR: Int = 500
 private const val HTTP_TOO_MANY_REQUESTS: Int = 429
-
-private const val FEED_RETRY_DELAY_MILLIS: Long = 1_000L
 
 private const val CHANNEL_URL: String = "https://www.youtube.com/channel/"
 private const val CONSENT_COOKIE: String = "SOCS=CAI"
@@ -23,7 +20,7 @@ private const val HANDLE_URL: String = "https://www.youtube.com/@"
 private const val HEADER_COOKIE: String = "Cookie"
 private const val SHORTS_URL: String = "https://www.youtube.com/shorts/"
 
-class YouTubeClient(private val httpClient: OkHttpClient) {
+class YouTubeClient(private val channelVideosReader: ChannelVideosReader, private val httpClient: OkHttpClient) {
     private val probeClient: OkHttpClient = httpClient.newBuilder().followRedirects(false).followSslRedirects(false).build()
 
     suspend fun fetchChannelId(reference: ChannelReference): String = withContext(Dispatchers.IO) {
@@ -38,14 +35,7 @@ class YouTubeClient(private val httpClient: OkHttpClient) {
         }
     }
 
-    suspend fun fetchFeed(channelId: String): List<FeedEntry> = retrying(attempts = FEED_ATTEMPTS, delayMillis = FEED_RETRY_DELAY_MILLIS, shouldRetry = { exception -> exception is UnexpectedResponseException }) {
-        withContext(Dispatchers.IO) {
-            httpClient.newCall(request(FEED_URL + channelId)).execute().use { response ->
-                response.requireSuccess()
-                FeedParser.parse(parser = Xml.newPullParser(), reader = response.body.charStream())
-            }
-        }
-    }
+    suspend fun fetchLatestVideos(channelId: String): List<FeedEntry> = attempt { fetchFeed(channelId) }.getOrElse { channelVideosReader.fetchVideos(channelId) }
 
     suspend fun isShort(entry: FeedEntry): Boolean {
         if (entry.isShortLink) return true
@@ -57,6 +47,13 @@ class YouTubeClient(private val httpClient: OkHttpClient) {
                     else -> false
                 }
             }
+        }
+    }
+
+    private suspend fun fetchFeed(channelId: String): List<FeedEntry> = withContext(Dispatchers.IO) {
+        httpClient.newCall(request(FEED_URL + channelId)).execute().use { response ->
+            response.requireSuccess()
+            FeedParser.parse(parser = Xml.newPullParser(), reader = response.body.charStream())
         }
     }
 

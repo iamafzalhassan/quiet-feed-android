@@ -4,4 +4,4 @@ import androidx.compose.runtime.Immutable
 import com.example.quietfeed.domain.video.Video
 
 @Immutable
-data class ChannelUiState(val isLoading: Boolean = true, val channelName: String = "", val videos: List<Video> = emptyList())
+data class ChannelUiState(val isLoading: Boolean = true, val channelName: String = "", val videos: List<Video> = emptyList(), val feedback: ChannelFeedback? = null)

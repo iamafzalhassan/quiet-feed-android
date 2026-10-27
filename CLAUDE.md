@@ -73,7 +73,7 @@ Single `app` module. Each top-level package is named for its role, following
 ```
 app/src/main/java/com/example/quietfeed/
     MainActivity, QuietFeedApplication   platform entry points
-    app/                         App, AppGraph, FeedSyncWorker, FeedSyncScheduler; the only package that sees every other one
+    app/                         App, AppGraph, FeedSyncWorker, FeedSyncScheduler, NewVideoNotifier; the only package that sees every other one
     app/navigation/              Routes
     domain/                      pure Kotlin rules, no IO, no Compose UI
         channel/                 Channel, ChannelReference, ChannelReferenceParser, AddChannelResult, AddChannelError
@@ -84,8 +84,8 @@ app/src/main/java/com/example/quietfeed/
         local/dao/               Room DAOs
         remote/                  YouTubeClient, FeedParser, ChannelPageParser, FeedEntry, remote exceptions
         repository/              repositories and their entity-to-model mappings
-        sync/                    FeedSync, SyncResult, newSince
-    platform/                    VideoLauncher
+        sync/                    FeedSync, SyncReport, ChannelUploads, SyncResult, newSince
+    platform/                    VideoLauncher, NotificationPermission
     ui/
         theme/                   AppColors, AppSpacing, AppTextStyles, QuietFeedTheme
         components/control/      AppButtons, AppTextField
@@ -164,9 +164,33 @@ reason.
   channels' ids in that key, and the page for a channel id that does not exist
   still answers `200` and echoes the requested id there. A page with none of the
   three is a channel that does not exist.
-- **The feed is retried.** `fetchFeed` tries three times, waiting one then two
-  seconds, when YouTube answers with an error status. A feed error never means
-  "channel not found"; during sync it only marks that channel as not checked.
+- **Videos come from the RSS feed first and NewPipeExtractor second.** This is
+  the deliberate departure from the spec's "RSS only". The feed failed on most
+  requests for days (404 and 500 for most channels, October 2026), so
+  `YouTubeClient.fetchLatestVideos` tries the feed once, with no retries, and on
+  any failure reads the channel's Videos tab through NewPipeExtractor
+  (`ChannelVideosReader`), the library the NewPipe app uses, with no API key and
+  no account. The feed stays first because it is light and its dates are exact.
+  The Videos tab gives YouTube's relative dates ("3 hours ago"), converted by the
+  extractor into approximate instants, so a video uploaded within about one
+  date unit of the moment a channel was added can fall on the wrong side of the
+  cutoff; everything older or newer is unaffected. The Videos tab holds no
+  Shorts, and items flagged as short-form or without a date are dropped. Only
+  when both sources fail is the channel marked as not checked, and an error
+  never means "channel not found".
+- **NewPipeExtractor setup.** `com.github.TeamNewPipe:NewPipeExtractor` from
+  JitPack, restricted in `settings.gradle.kts` to the `com.github.TeamNewPipe`
+  group. It needs core library desugaring (`desugar_jdk_libs_nio`, as in the
+  NewPipe app). `AppGraph` calls `NewPipe.init` once with `NewPipeDownloader`,
+  which sends the extractor's requests through the app's one `OkHttpClient`
+  with NewPipe's desktop Firefox user agent and turns a `429` into the
+  extractor's `ReCaptchaException`. `proguard-rules.pro` carries the NewPipe
+  app's keep rules for the extractor's time-ago patterns, Rhino and PrettyTime,
+  so R8 does not strip what it loads by reflection. The library is GPL-3, which
+  is acceptable for this personal app. When YouTube changes its site the
+  extractor can break until a new release; the fix is a version bump in
+  `libs.versions.toml`, and the RSS feed keeps working meanwhile wherever it
+  answers.
 - **Add Channel is a `+` icon in the top bar**, plus a primary button in the
   empty state, as on `Evenly`'s Groups screen. There is no FAB. The empty state
   keeps the spec's wording, "No channels yet. Tap + to add one."
@@ -199,14 +223,48 @@ reason.
   scope so leaving a screen never cancels it, and a second full sync joins the
   one already running. One failing channel never stops the others. Channels sync
   in parallel, at most `MAX_PARALLEL_SYNCS` (4) at a time through one shared
-  semaphore, so a refresh while the feed is failing costs roughly one channel's
-  retries per batch of four instead of every channel's retries in a row. Videos
-  are never deleted by sync.
+  semaphore, so a refresh costs roughly one channel's feed-and-fallback round
+  per batch of four instead of every channel's in a row. Videos are never
+  deleted by sync.
+- **New-video notifications (the spec's v2) are in.** Every sync returns a
+  `SyncReport` with the videos it actually inserted per channel
+  (`ChannelUploads`): rows Room did not ignore, Shorts excluded, so a video can
+  only ever be announced once. Only `FeedSyncWorker` posts, and only while the
+  app is not visible (`ProcessLifecycleOwner` below `STARTED`); syncs the user
+  can see show the red dot instead. `NewVideoNotifier` posts one notification
+  per channel, tagged with the channel id: the user's channel name as the
+  title, the video title as the text, or a count with up to five titles in an
+  inbox style. Android groups several automatically, so there is no summary
+  notification. Small icon `ic_notification` is the block-Q on a 23 grid,
+  tinted `brand_navy`. Tapping opens that channel: the `PendingIntent` carries
+  the channel id to a `singleTop` `MainActivity`, which hands it to `App` to
+  navigate once, and opening a channel by any route cancels its notification.
+  The notification channel is `new_videos` at default importance. On Android
+  13 and later the permission is asked once, right after the first channel is
+  added and its sheet has closed (`rememberNotificationPermissionRequest`,
+  remembered in `SharedPreferences`); if it is denied, nothing is posted and
+  the system settings are the way back.
 - **Release builds are shrunk with R8** (`isMinifyEnabled`, `isShrinkResources`),
   as in `Evenly`, because `material-icons-extended` is otherwise shipped whole.
   `proguard-rules.pro` is empty: OkHttp, Room and WorkManager ship their own
   consumer rules. Debug builds are not shrunk, so a release build is checked on
   a device before it is relied on.
+- **A channel's videos can be cleared**, outside the spec. The channel screen's
+  top bar shows a Clear All icon while the list has videos; it opens a
+  `ConfirmSheet` with a `DangerButton`, and confirming runs
+  `VideoDao.clearVideos` in one transaction: it deletes the channel's stored
+  videos and moves the channel's cutoff (`addedAt`) to now. Moving the cutoff
+  is what keeps cleared videos from coming back on the next sync while they
+  are still in the feed, so clearing means "start over from now", and the
+  empty state's "since you added this channel" then reads from the moment of
+  clearing. A success snackbar confirms it through `ChannelFeedback`.
+- **Channels are ordered by their latest upload**, newest first, then by name
+  (case-insensitive) for channels with no videos yet. The spec orders channels
+  with new videos first and then alphabetically; the developer chose upload
+  recency instead, which still lifts a channel the moment it gets a new video.
+  Only videos the channel screen would show count: published after the channel
+  was added, Shorts excluded. The sort is a subquery in
+  `ChannelDao.observeChannelSummaries`, served by the `channelId` index.
 - **The red dot is `AppColors.danger`, `AppSpacing.newDot` (8dp)**, trailing the
   channel name. The channel screen marks videos seen whenever it shows an unseen
   one, so a video that arrives while the screen is open does not leave a dot

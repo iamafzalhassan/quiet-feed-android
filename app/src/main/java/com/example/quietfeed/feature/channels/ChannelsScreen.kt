@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.quietfeed.R
 import com.example.quietfeed.domain.channel.Channel
 import com.example.quietfeed.feature.channels.components.AddChannelSheet
+import com.example.quietfeed.platform.rememberNotificationPermissionRequest
 import com.example.quietfeed.ui.components.control.PrimaryButton
 import com.example.quietfeed.ui.components.display.AppListTile
 import com.example.quietfeed.ui.components.display.AppTopBar
@@ -60,6 +61,7 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarState = rememberAppSnackbarState()
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
     var isAddSheetOpen by rememberSaveable { mutableStateOf(false) }
     var selectedChannelId by rememberSaveable { mutableStateOf<String?>(null) }
     var channelSheet by rememberSaveable { mutableStateOf<ChannelSheet?>(null) }
@@ -78,6 +80,7 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
     LaunchedEffect(state.addedChannelName, isAddSheetOpen) {
         if (state.addedChannelName != null && !isAddSheetOpen) {
             viewModel.onEvent(ChannelsEvent.ConsumeAddedChannel)
+            requestNotificationPermission()
         }
     }
 

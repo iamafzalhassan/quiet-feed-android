@@ -27,7 +27,7 @@ abstract class ChannelDao {
 
     @Query(
         "SELECT c.addedAt, c.channelId, c.name, EXISTS (SELECT 1 FROM videos v WHERE v.channelId = c.channelId AND v.isSeen = 0 AND v.isShort = 0 AND v.publishedAt > c.addedAt) AS hasNewVideos " +
-            "FROM channels c ORDER BY hasNewVideos DESC, c.name COLLATE NOCASE ASC",
+            "FROM channels c ORDER BY (SELECT MAX(v.publishedAt) FROM videos v WHERE v.channelId = c.channelId AND v.isShort = 0 AND v.publishedAt > c.addedAt) DESC, c.name COLLATE NOCASE ASC",
     )
     abstract fun observeChannelSummaries(): Flow<List<ChannelSummaryRow>>
 
