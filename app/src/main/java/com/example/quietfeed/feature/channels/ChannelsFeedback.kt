@@ -7,7 +7,7 @@ sealed interface ChannelsFeedback {
 
     data class ChannelRenamed(val name: String) : ChannelsFeedback
 
-    data object RefreshFailed : ChannelsFeedback
+    data object SyncFailed : ChannelsFeedback
 
-    data object RefreshOffline : ChannelsFeedback
+    data object SyncOffline : ChannelsFeedback
 }

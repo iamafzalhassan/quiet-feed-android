@@ -18,7 +18,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 - **Red dot** next to a channel with unseen videos, cleared as soon as you open it.
 - **Ordered by latest upload**, so the channel that posted most recently is always at the top.
 - **Notifications** for new uploads while the app is closed, one per channel, opening straight to that channel when tapped. Android 13 and later ask for permission once.
-- **Background sync** about every 30 minutes when online, plus whenever you open the app and on pull to refresh.
+- **Background sync** about every 30 minutes when online, plus whenever you open the app and from the Sync button in the top bar.
 - **History that grows**: a video stays after it drops out of YouTube's feed.
 - **Selection mode**: long-press a channel to rename or remove it from the top bar. Removing a channel deletes its videos.
 - **Clear a channel**: wipe its saved videos and start it over from now.
@@ -60,7 +60,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 
 ## Design system
 
-QuietFeed shares one design system with my other apps: a dark navy-night palette with a periwinkle accent, and a dotted divider as the signature motif. Colours, spacing and typography are tokens in `ui/theme`, with SF Pro Display for all text. Shared components (`AppTextField`, `AppButtons`, `AppListTile`, `AppTopBar`, `AppModalSheet`, `ConfirmSheet`, `TextInputSheet`, `AppSnackbar`, `AppPullToRefreshBox`, `EmptyState`, `DottedDivider`, and the iOS-style `ActivityIndicator`) live in `ui/components`. Screens never use a raw colour or a bare measurement. The launcher icon and splash screen are a single vector mark, a block Q, in paper on navy.
+QuietFeed shares one design system with my other apps: a dark navy-night palette with a periwinkle accent, and a dotted divider as the signature motif. Colours, spacing and typography are tokens in `ui/theme`, with SF Pro Display for all text. Shared components (`AppTextField`, `AppButtons`, `AppListTile`, `AppTopBar`, `AppModalSheet`, `ConfirmSheet`, `TextInputSheet`, `AppSnackbar`, `EmptyState`, `DottedDivider`, and the iOS-style `ActivityIndicator`) live in `ui/components`. Screens never use a raw colour or a bare measurement. The launcher icon and splash screen are a single vector mark, a block Q, in paper on navy.
 
 ## Code conventions
 

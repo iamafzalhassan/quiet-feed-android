@@ -30,8 +30,20 @@
     <string name="channels_empty_message">Tap + to add one.</string>
     <string name="channels_empty_title">No channels yet</string>
     <string name="channels_title">Channels</string>
-    <string name="refresh_failed">Some channels couldn\'t be checked. They\'ll be tried again on the next refresh.</string>
-    <string name="refresh_offline">You\'re offline, so no channels were checked. Pull to refresh once you\'re connected.</string>
+    <string name="action_sync">Check for new videos</string>
+    <string name="sync_checked_just_now">Checked just now</string>
+    <string name="sync_checked_on">Checked %1$s</string>
+    <string name="sync_checking">Checking for new videos…</string>
+    <string name="sync_failed">Some channels couldn\'t be checked. They\'ll be tried again on the next check.</string>
+    <string name="sync_offline">You\'re offline, so no channels were checked. Tap sync once you\'re connected.</string>
+    <plurals name="sync_checked_hours">
+        <item quantity="one">Checked %d hour ago</item>
+        <item quantity="other">Checked %d hours ago</item>
+    </plurals>
+    <plurals name="sync_checked_minutes">
+        <item quantity="one">Checked %d minute ago</item>
+        <item quantity="other">Checked %d minutes ago</item>
+    </plurals>
     <string name="remove_channel_message">Stop following %1$s? Its saved videos are deleted from this device.</string>
     <string name="remove_channel_title">Remove channel</string>
     <string name="rename_channel_title">Rename channel</string>

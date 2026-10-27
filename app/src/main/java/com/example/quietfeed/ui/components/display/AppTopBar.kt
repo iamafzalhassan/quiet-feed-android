@@ -1,6 +1,7 @@
 package com.example.quietfeed.ui.components.display
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,7 @@ fun AppTopBar(
     title: String,
     modifier: Modifier = Modifier,
     backLabel: String = stringResource(R.string.action_back),
+    subtitle: String? = null,
     onBack: (() -> Unit)? = null,
     backIcon: ImageVector = Icons.AutoMirrored.Outlined.ArrowBack,
     actions: @Composable RowScope.() -> Unit = {},
@@ -46,7 +48,12 @@ fun AppTopBar(
                 Icon(contentDescription = backLabel, imageVector = backIcon, tint = AppColors.primary)
             }
         }
-        Text(modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = AppTextStyles.screenTitle, text = title)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(maxLines = 1, overflow = TextOverflow.Ellipsis, style = AppTextStyles.screenTitle, text = title)
+            if (subtitle != null) {
+                Text(maxLines = 1, overflow = TextOverflow.Ellipsis, style = AppTextStyles.listSecondary, text = subtitle)
+            }
+        }
         actions()
     }
 }

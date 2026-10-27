@@ -18,8 +18,9 @@ import kotlinx.coroutines.launch
 class ChannelsViewModel(private val channelRepository: ChannelRepository, private val feedSync: FeedSync) : ViewModel() {
     private val screenState: MutableStateFlow<ChannelsUiState> = MutableStateFlow(ChannelsUiState())
 
-    val state: StateFlow<ChannelsUiState> = combine(channelRepository.observeChannels(), screenState) { channels, screen -> screen.copy(isLoading = false, channels = channels) }
-        .stateIn(initialValue = ChannelsUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed(STATE_STOP_TIMEOUT_MILLIS))
+    val state: StateFlow<ChannelsUiState> = combine(channelRepository.observeChannels(), feedSync.isSyncing, feedSync.observeLastCheckedAt(), screenState) { channels, isSyncing, lastCheckedAt, screen ->
+        screen.copy(isLoading = false, isSyncing = isSyncing, channels = channels, lastCheckedAt = lastCheckedAt)
+    }.stateIn(initialValue = ChannelsUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed(STATE_STOP_TIMEOUT_MILLIS))
 
     fun onEvent(event: ChannelsEvent) {
         when (event) {
@@ -27,9 +28,9 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
             ChannelsEvent.ConsumeAddedChannel -> screenState.update { state -> state.copy(addedChannelName = null, feedback = state.addedChannelName?.let { name -> ChannelsFeedback.ChannelAdded(name) } ?: state.feedback) }
             ChannelsEvent.DismissAddError -> screenState.update { state -> state.copy(addError = null) }
             ChannelsEvent.DismissFeedback -> screenState.update { state -> state.copy(feedback = null) }
-            ChannelsEvent.Refresh -> refresh()
             is ChannelsEvent.RemoveChannel -> removeChannel(event.channelId)
             is ChannelsEvent.RenameChannel -> renameChannel(channelId = event.channelId, name = event.name)
+            ChannelsEvent.Sync -> sync()
         }
     }
 
@@ -50,24 +51,6 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
         }
     }
 
-    private fun refresh() {
-        if (screenState.value.isRefreshing) return
-        screenState.update { state -> state.copy(isRefreshing = true) }
-        viewModelScope.launch {
-            val result = feedSync.syncAll().result
-            screenState.update { state ->
-                state.copy(
-                    isRefreshing = false,
-                    feedback = when (result) {
-                        SyncResult.OFFLINE -> ChannelsFeedback.RefreshOffline
-                        SyncResult.PARTIAL -> ChannelsFeedback.RefreshFailed
-                        SyncResult.SYNCED -> state.feedback
-                    },
-                )
-            }
-        }
-    }
-
     private fun removeChannel(channelId: String) {
         val name = state.value.channels.firstOrNull { channel -> channel.id == channelId }?.name ?: return
         viewModelScope.launch {
@@ -81,6 +64,20 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
         viewModelScope.launch {
             channelRepository.renameChannel(channelId = channelId, name = name)
             screenState.update { state -> state.copy(feedback = ChannelsFeedback.ChannelRenamed(name.trim())) }
+        }
+    }
+
+    private fun sync() {
+        if (state.value.isSyncing) return
+        viewModelScope.launch {
+            val feedback = when (feedSync.syncAll().result) {
+                SyncResult.OFFLINE -> ChannelsFeedback.SyncOffline
+                SyncResult.PARTIAL -> ChannelsFeedback.SyncFailed
+                SyncResult.SYNCED -> null
+            }
+            if (feedback != null) {
+                screenState.update { state -> state.copy(feedback = feedback) }
+            }
         }
     }
 }

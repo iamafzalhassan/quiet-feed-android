@@ -91,7 +91,7 @@ app/src/main/java/com/example/quietfeed/
         theme/                   AppColors, AppSpacing, AppTextStyles, QuietFeedTheme
         components/control/      AppButtons, AppTextField
         components/display/      AppTopBar, AppListTile, DottedDivider
-        components/feedback/     ActivityIndicator, AppPullToRefreshBox, AppSnackbar, EmptyState
+        components/feedback/     ActivityIndicator, AppSnackbar, EmptyState
         components/sheet/        AppModalSheet, ConfirmSheet, TextInputSheet
         format/                  DateFormat
     common/                      dependency-free helpers: Attempts (attemptOrNull, failureOf, retrying), StateSharing
@@ -206,8 +206,8 @@ reason.
   `surfaceSunken` fill (`AppListTile.isSelected`), and the top bar switches to
   selection mode: a Close icon in the back slot, the channel's name as the
   title, and Edit and Delete icons in `primary`. Close, the system back, or
-  tapping the selected tile clears the selection; tapping another tile moves it;
-  pull-to-refresh is disabled while a channel is selected. Edit opens a
+  tapping the selected tile clears the selection; tapping another tile moves it.
+  Edit opens a
   `TextInputSheet` prefilled with the current name, whose Save stays disabled
   until the name is non-blank and different. Delete opens a `ConfirmSheet` with
   a `DangerButton`; the spec's dialog and swipe are not used. Cancelling a sheet
@@ -218,7 +218,19 @@ reason.
   already added (checked before any network call for a channel id, and by the
   primary key for a handle), not found (`404` or no id on the channel page),
   offline (any `IOException`) and failed (anything else).
-- **Sync** runs every time the app comes to the foreground, on pull-to-refresh,
+- **A Sync button replaces pull to refresh**, a deliberate departure from the
+  spec. The channel list's top bar has a Sync icon left of the add icon; while
+  any sync runs (opening the app, adding a channel, the button, the background
+  worker in the same process) it turns into the `ActivityIndicator` in a box of
+  the same size (`AppSpacing.iconButton` plus the minimum touch target), so the
+  add icon never moves. `FeedSync.isSyncing` counts running syncs. Under the
+  title a status line reads "Checking for new videos…" while syncing, then
+  "Checked just now", "Checked 5 minutes ago", "Checked 3 hours ago", or
+  "Checked 14 Sep 2026" after a day (`ElapsedFormat`), ticking once a minute.
+  The time is stored in `SyncPreferences` after every full sync that was not
+  offline, so it survives restarts and includes background syncs. The status
+  line is hidden in selection mode and before the first check.
+- **Sync** runs every time the app comes to the foreground, from the Sync button,
   for the new channel right after it is added, and every 30 minutes through
   WorkManager with a connected-network constraint. `FeedSync` runs in the app
   scope so leaving a screen never cancels it, and a second full sync joins the
@@ -247,7 +259,7 @@ reason.
   existed are covered too; asking only after an add left those installs never
   asked and silently without notifications. If it is denied, nothing is posted
   and the system settings are the way back. Videos found by a sync the user can
-  see (opening the app, pull to refresh) never notify; they show the red dot.
+  see (opening the app, the Sync button) never notify; they show the red dot.
 - **Release builds are shrunk with R8** (`isMinifyEnabled`, `isShrinkResources`),
   as in `Evenly`, because `material-icons-extended` is otherwise shipped whole.
   `proguard-rules.pro` is empty: OkHttp, Room and WorkManager ship their own
@@ -364,7 +376,7 @@ Scale `xs 4, sm 8, md 12, lg 16, xl 24`.
 `hairline 1`. `buttonHeight` is a computed alias of `controlHeight`, so a button
 and a field can never drift apart.
 Radii: `radiusField 10`, `radiusCard 12`, `radiusButton 50` (fully rounded pill).
-Icons: `iconEmptyState 32`, `emptyStateIcon 80`. Edges: `fadingEdge 32`. Indicators:
+Icons: `iconButton 40`, `iconEmptyState 32`, `emptyStateIcon 80`. Edges: `fadingEdge 32`. Indicators:
 `progressIndicator 20`, `newDot 8`.
 
 The token set is trimmed to what the app uses, so an unreferenced token is dead
@@ -434,10 +446,10 @@ and every style is built by one private `style(...)` helper.
 - **Confirm sheet** (`ConfirmSheet`) — a sheet with a `body` message and a
   `Cancel | confirm` action row; the confirm button is `DangerButton` when the
   action removes data.
-- **Loading** (`ActivityIndicator`, `AppPullToRefreshBox`) — the iOS activity
+- **Loading** (`ActivityIndicator`) — the iOS activity
   indicator: eight fading spokes on a one-second cycle, `progressIndicator`
-  square. Pull-to-refresh keeps Material's gesture but draws this indicator,
-  revealing its spokes as the pull grows. A busy button shows it in place of its
+  square. The Sync button turns into it while any sync runs.
+  A busy button shows it in place of its
   label. Never a Material progress indicator.
 - **Snackbar** (`AppSnackbarHost`, `AppSnackbarState`) — square corners,
   `surfaceInverse` ground, `dangerSurface` for failure, `successSurface` for a

@@ -22,18 +22,22 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.RssFeed
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,15 +50,22 @@ import com.example.quietfeed.ui.components.control.PrimaryButton
 import com.example.quietfeed.ui.components.display.AppListTile
 import com.example.quietfeed.ui.components.display.AppTopBar
 import com.example.quietfeed.ui.components.display.fadingEdges
-import com.example.quietfeed.ui.components.feedback.AppPullToRefreshBox
+import com.example.quietfeed.ui.components.feedback.ActivityIndicator
 import com.example.quietfeed.ui.components.feedback.AppSnackbarHost
 import com.example.quietfeed.ui.components.feedback.ScreenEmptyState
 import com.example.quietfeed.ui.components.feedback.rememberAppSnackbarState
 import com.example.quietfeed.ui.components.sheet.ConfirmSheet
 import com.example.quietfeed.ui.components.sheet.TextInputSheet
+import com.example.quietfeed.ui.format.DateFormat
+import com.example.quietfeed.ui.format.Elapsed
+import com.example.quietfeed.ui.format.ElapsedFormat
 import com.example.quietfeed.ui.theme.AppColors
 import com.example.quietfeed.ui.theme.AppSpacing
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
+
+private const val CLOCK_TICK_MILLIS: Long = 60_000L
 
 @Composable
 fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel, modifier: Modifier = Modifier) {
@@ -97,8 +108,8 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                 is ChannelsFeedback.ChannelAdded -> snackbarState.showSuccess(resources.getString(R.string.channel_added, feedback.name))
                 is ChannelsFeedback.ChannelRemoved -> snackbarState.showSuccess(resources.getString(R.string.channel_removed, feedback.name))
                 is ChannelsFeedback.ChannelRenamed -> snackbarState.showSuccess(resources.getString(R.string.channel_renamed, feedback.name))
-                ChannelsFeedback.RefreshFailed -> snackbarState.showError(resources.getString(R.string.refresh_failed))
-                ChannelsFeedback.RefreshOffline -> snackbarState.showError(resources.getString(R.string.refresh_offline))
+                ChannelsFeedback.SyncFailed -> snackbarState.showError(resources.getString(R.string.sync_failed))
+                ChannelsFeedback.SyncOffline -> snackbarState.showError(resources.getString(R.string.sync_offline))
             }
         }
         viewModel.onEvent(ChannelsEvent.DismissFeedback)
@@ -107,7 +118,16 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
     Box(modifier = modifier.fillMaxSize().background(AppColors.surfaceBase)) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedChannel == null) {
-                AppTopBar(title = stringResource(R.string.channels_title)) {
+                AppTopBar(subtitle = syncStatus(isSyncing = state.isSyncing, lastCheckedAt = state.lastCheckedAt), title = stringResource(R.string.channels_title)) {
+                    if (state.isSyncing) {
+                        Box(modifier = Modifier.minimumInteractiveComponentSize().size(AppSpacing.iconButton), contentAlignment = Alignment.Center) {
+                            ActivityIndicator()
+                        }
+                    } else {
+                        IconButton(onClick = { viewModel.onEvent(ChannelsEvent.Sync) }) {
+                            Icon(contentDescription = stringResource(R.string.action_sync), imageVector = Icons.Outlined.Sync, tint = AppColors.primary)
+                        }
+                    }
                     IconButton(onClick = openAddSheet) {
                         Icon(contentDescription = stringResource(R.string.action_add_channel), imageVector = Icons.Outlined.Add, tint = AppColors.primary)
                     }
@@ -122,12 +142,7 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                     }
                 }
             }
-            AppPullToRefreshBox(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                isEnabled = selectedChannel == null,
-                isRefreshing = state.isRefreshing,
-                onRefresh = { viewModel.onEvent(ChannelsEvent.Refresh) },
-            ) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     state.isLoading -> Unit
                     state.channels.isEmpty() -> ScreenEmptyState(
@@ -201,6 +216,25 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
             )
             null -> Unit
         }
+    }
+}
+
+@Composable
+private fun syncStatus(isSyncing: Boolean, lastCheckedAt: Instant?): String? {
+    val now by produceState(initialValue = Instant.now()) {
+        while (true) {
+            delay(CLOCK_TICK_MILLIS)
+            value = Instant.now()
+        }
+    }
+
+    if (isSyncing) return stringResource(R.string.sync_checking)
+    val checkedAt = lastCheckedAt ?: return null
+    return when (val elapsed = ElapsedFormat.between(end = now, start = checkedAt)) {
+        is Elapsed.Hours -> pluralStringResource(R.plurals.sync_checked_hours, elapsed.count, elapsed.count)
+        Elapsed.JustNow -> stringResource(R.string.sync_checked_just_now)
+        is Elapsed.Minutes -> pluralStringResource(R.plurals.sync_checked_minutes, elapsed.count, elapsed.count)
+        is Elapsed.Since -> stringResource(R.string.sync_checked_on, DateFormat.formatShort(elapsed.instant))
     }
 }
 

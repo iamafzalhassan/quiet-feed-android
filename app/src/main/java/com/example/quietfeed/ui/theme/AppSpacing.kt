@@ -9,6 +9,7 @@ object AppSpacing {
     val emptyStateIcon: Dp = 80.dp
     val fadingEdge: Dp = 32.dp
     val hairline: Dp = 1.dp
+    val iconButton: Dp = 40.dp
     val iconEmptyState: Dp = 32.dp
     val lg: Dp = 16.dp
     val md: Dp = 12.dp

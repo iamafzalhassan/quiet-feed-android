@@ -9,9 +9,9 @@ sealed interface ChannelsEvent {
 
     data object DismissFeedback : ChannelsEvent
 
-    data object Refresh : ChannelsEvent
-
     data class RemoveChannel(val channelId: String) : ChannelsEvent
 
     data class RenameChannel(val channelId: String, val name: String) : ChannelsEvent
+
+    data object Sync : ChannelsEvent
 }
