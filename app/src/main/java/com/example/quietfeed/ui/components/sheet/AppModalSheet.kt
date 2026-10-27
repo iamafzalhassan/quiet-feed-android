@@ -63,7 +63,7 @@ fun SheetActions(onDismiss: () -> Unit, sheet: AppSheetState, modifier: Modifier
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Stable
-class AppSheetState internal constructor(private val scope: CoroutineScope, internal val sheetState: SheetState) {
+class AppSheetState internal constructor(private val scope: CoroutineScope, private val sheetState: SheetState) {
     private var isClosing: Boolean = false
 
     fun closeThen(action: () -> Unit) {

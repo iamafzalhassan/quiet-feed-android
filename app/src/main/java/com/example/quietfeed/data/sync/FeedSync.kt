@@ -11,13 +11,21 @@ import com.example.quietfeed.data.remote.YouTubeClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import java.io.IOException
+
+private const val MAX_PARALLEL_SYNCS: Int = 4
 
 class FeedSync(private val channelDao: ChannelDao, private val scope: CoroutineScope, private val videoDao: VideoDao, private val youTubeClient: YouTubeClient) {
     private val mutex: Mutex = Mutex()
+
+    private val syncPermits: Semaphore = Semaphore(MAX_PARALLEL_SYNCS)
 
     private var running: Deferred<SyncResult>? = null
 
@@ -28,7 +36,7 @@ class FeedSync(private val channelDao: ChannelDao, private val scope: CoroutineS
     suspend fun syncAll(): SyncResult = mutex.withLock { running?.takeIf { it.isActive } ?: scope.async { syncChannels(channelDao.findChannels()) }.also { running = it } }.await()
 
     private suspend fun syncChannels(channels: List<ChannelEntity>): SyncResult {
-        val failures = channels.mapNotNull { channel -> failureOf { syncChannel(channel) } }
+        val failures = coroutineScope { channels.map { channel -> async { syncPermits.withPermit { failureOf { syncChannel(channel) } } } }.awaitAll() }.filterNotNull()
         return when {
             failures.isEmpty() -> SyncResult.SYNCED
             failures.size == channels.size && failures.all { it is IOException } -> SyncResult.OFFLINE

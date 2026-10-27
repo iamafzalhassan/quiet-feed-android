@@ -197,8 +197,16 @@ reason.
   for the new channel right after it is added, and every 30 minutes through
   WorkManager with a connected-network constraint. `FeedSync` runs in the app
   scope so leaving a screen never cancels it, and a second full sync joins the
-  one already running. One failing channel never stops the others. Videos are
-  never deleted by sync.
+  one already running. One failing channel never stops the others. Channels sync
+  in parallel, at most `MAX_PARALLEL_SYNCS` (4) at a time through one shared
+  semaphore, so a refresh while the feed is failing costs roughly one channel's
+  retries per batch of four instead of every channel's retries in a row. Videos
+  are never deleted by sync.
+- **Release builds are shrunk with R8** (`isMinifyEnabled`, `isShrinkResources`),
+  as in `Evenly`, because `material-icons-extended` is otherwise shipped whole.
+  `proguard-rules.pro` is empty: OkHttp, Room and WorkManager ship their own
+  consumer rules. Debug builds are not shrunk, so a release build is checked on
+  a device before it is relied on.
 - **The red dot is `AppColors.danger`, `AppSpacing.newDot` (8dp)**, trailing the
   channel name. The channel screen marks videos seen whenever it shows an unseen
   one, so a video that arrives while the screen is open does not leave a dot
