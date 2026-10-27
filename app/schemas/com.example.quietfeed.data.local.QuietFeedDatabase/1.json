@@ -1,0 +1,121 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "0c77f091a6ea766cb54fc8557e453696",
+    "entities": [
+      {
+        "tableName": "channels",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`addedAt` INTEGER NOT NULL, `channelId` TEXT NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`channelId`))",
+        "fields": [
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "channelId"
+          ]
+        }
+      },
+      {
+        "tableName": "videos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`isSeen` INTEGER NOT NULL, `isShort` INTEGER NOT NULL, `publishedAt` INTEGER NOT NULL, `channelId` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `videoId` TEXT NOT NULL, PRIMARY KEY(`videoId`), FOREIGN KEY(`channelId`) REFERENCES `channels`(`channelId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "isSeen",
+            "columnName": "isSeen",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isShort",
+            "columnName": "isShort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "publishedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoId",
+            "columnName": "videoId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "videoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_videos_channelId",
+            "unique": false,
+            "columnNames": [
+              "channelId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_videos_channelId` ON `${TABLE_NAME}` (`channelId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "channels",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "channelId"
+            ],
+            "referencedColumns": [
+              "channelId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0c77f091a6ea766cb54fc8557e453696')"
+    ]
+  }
+}
