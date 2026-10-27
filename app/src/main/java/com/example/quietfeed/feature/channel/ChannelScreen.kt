@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.VideoLibrary
@@ -35,6 +35,7 @@ import com.example.quietfeed.domain.video.Video
 import com.example.quietfeed.platform.rememberVideoLauncher
 import com.example.quietfeed.ui.components.display.AppListTile
 import com.example.quietfeed.ui.components.display.AppTopBar
+import com.example.quietfeed.ui.components.display.fadingEdges
 import com.example.quietfeed.ui.components.feedback.AppSnackbarHost
 import com.example.quietfeed.ui.components.feedback.ScreenEmptyState
 import com.example.quietfeed.ui.components.feedback.rememberAppSnackbarState
@@ -44,7 +45,7 @@ import com.example.quietfeed.ui.theme.AppColors
 import com.example.quietfeed.ui.theme.AppSpacing
 import kotlinx.coroutines.launch
 
-private const val VIDEO_TITLE_MAX_LINES: Int = 2
+private const val VIDEO_TITLE_MAX_LINES: Int = 3
 
 @Composable
 fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Modifier = Modifier) {
@@ -93,7 +94,7 @@ fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Mod
                 )
             }
         }
-        AppSnackbarHost(modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), state = snackbarState)
+        AppSnackbarHost(modifier = Modifier.align(Alignment.BottomCenter), state = snackbarState)
     }
 
     if (isClearSheetOpen) {
@@ -114,10 +115,12 @@ fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Mod
 @Composable
 private fun VideoList(videos: List<Video>, onOpenVideo: (Video) -> Unit, modifier: Modifier = Modifier) {
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listState = rememberLazyListState()
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().fadingEdges(bottomInset = navigationBarBottom, state = listState),
         contentPadding = PaddingValues(bottom = AppSpacing.xl + navigationBarBottom, end = AppSpacing.screenPadding, start = AppSpacing.screenPadding, top = AppSpacing.lg),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
     ) {
         items(items = videos, key = { video -> video.id }) { video ->

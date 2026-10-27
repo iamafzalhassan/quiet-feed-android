@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        val barStyle = SystemBarStyle.light(darkScrim = Color.TRANSPARENT, scrim = Color.TRANSPARENT)
+        val barStyle = SystemBarStyle.dark(Color.TRANSPARENT)
         enableEdgeToEdge(navigationBarStyle = barStyle, statusBarStyle = barStyle)
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {

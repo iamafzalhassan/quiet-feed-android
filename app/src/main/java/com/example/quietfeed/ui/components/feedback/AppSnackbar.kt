@@ -1,6 +1,7 @@
 package com.example.quietfeed.ui.components.feedback
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
@@ -37,15 +38,15 @@ fun AppSnackbarHost(state: AppSnackbarState, modifier: Modifier = Modifier) {
 
         Snackbar(
             containerColor = when (tone) {
-                SnackTone.ERROR -> AppColors.danger
+                SnackTone.ERROR -> AppColors.dangerSurface
                 SnackTone.NEUTRAL -> AppColors.surfaceInverse
-                SnackTone.SUCCESS -> AppColors.success
+                SnackTone.SUCCESS -> AppColors.successSurface
             },
-            contentColor = AppColors.primaryOn,
+            contentColor = AppColors.textPrimary,
             shape = RectangleShape,
         ) {
             Text(
-                modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.sm),
+                modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.sm).navigationBarsPadding(),
                 maxLines = SNACK_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
                 style = AppTextStyles.snack,

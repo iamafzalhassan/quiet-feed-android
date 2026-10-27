@@ -25,7 +25,7 @@ object AppTextStyles {
     val listSecondary: TextStyle = style(color = AppColors.textSecondary, height = 1.3f, size = 13, weight = FontWeight.Normal)
     val screenTitle: TextStyle = style(color = AppColors.textPrimary, height = 1.2f, size = 20, weight = FontWeight.Bold)
     val sectionHeading: TextStyle = style(color = AppColors.textPrimary, height = 1.2f, size = 17, weight = FontWeight.SemiBold)
-    val snack: TextStyle = style(color = AppColors.primaryOn, height = 1.3f, size = 14, weight = FontWeight.Medium)
+    val snack: TextStyle = style(color = AppColors.textPrimary, height = 1.3f, size = 14, weight = FontWeight.Medium)
 
     private fun style(height: Float, size: Int, color: Color, weight: FontWeight, tabular: Boolean = false, tracking: Float = 0f): TextStyle = TextStyle(
         color = color,

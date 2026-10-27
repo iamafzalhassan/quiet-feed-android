@@ -60,7 +60,8 @@ member ordering convention below from its first line.
   video title, see **Decisions**.
 - **Loading is always the iOS activity indicator** (`ActivityIndicator`). Never
   a Material progress indicator, never a "Loading…" label.
-- **Light theme only.** No dark scheme, no dynamic color.
+- **Dark theme only.** No light scheme, no dynamic color, no following the
+  system setting. This departs from the light-only family apps on purpose.
 - **All user-facing text is a string resource** in `res/values/strings.xml`,
   read with `stringResource` in composition and with `LocalResources` inside a
   coroutine (snackbar messages). No string literal reaches the screen.
@@ -240,10 +241,13 @@ reason.
   the channel id to a `singleTop` `MainActivity`, which hands it to `App` to
   navigate once, and opening a channel by any route cancels its notification.
   The notification channel is `new_videos` at default importance. On Android
-  13 and later the permission is asked once, right after the first channel is
-  added and its sheet has closed (`rememberNotificationPermissionRequest`,
-  remembered in `SharedPreferences`); if it is denied, nothing is posted and
-  the system settings are the way back.
+  13 and later the permission is asked once, the first time the channel list
+  has a channel and no add sheet is open (`rememberNotificationPermissionRequest`,
+  remembered in `SharedPreferences`), so channels added before notifications
+  existed are covered too; asking only after an add left those installs never
+  asked and silently without notifications. If it is denied, nothing is posted
+  and the system settings are the way back. Videos found by a sync the user can
+  see (opening the app, pull to refresh) never notify; they show the red dot.
 - **Release builds are shrunk with R8** (`isMinifyEnabled`, `isShrinkResources`),
   as in `Evenly`, because `material-icons-extended` is otherwise shipped whole.
   `proguard-rules.pro` is empty: OkHttp, Room and WorkManager ship their own
@@ -269,8 +273,15 @@ reason.
   channel name. The channel screen marks videos seen whenever it shows an unseen
   one, so a video that arrives while the screen is open does not leave a dot
   behind.
-- **Video titles may take two lines** (`VIDEO_TITLE_MAX_LINES`), because a single
-  line hides most titles. The date line under it stays single-line.
+- **Video titles may take three lines** (`VIDEO_TITLE_MAX_LINES`), because a
+  single line hides most titles. The date line under it stays single-line.
+- **Scrolling lists fade at their edges** (`Modifier.fadingEdges` in
+  `ui/components/display/FadingEdges.kt`), on the channel list and the video
+  list. The list is drawn offscreen and masked with `BlendMode.DstIn`, so the
+  fade works on any background: the top `fadingEdge` (32dp) fades only while
+  the list can scroll back, the bottom one ends at the navigation bar and fades
+  only while it can scroll forward, and each fades in and out over 200ms. The
+  lists hoist their `LazyListState` to drive it.
 - **Videos open in the YouTube app**, through an `ACTION_VIEW` intent with the
   YouTube package. If it is not installed the same intent opens without a
   package (the browser), and if nothing can open it a snackbar explains why. No
@@ -309,32 +320,42 @@ reason.
 # Design system
 
 Ported from `Evenly` and `Debitter`, which are themselves ported from `biller`,
-so all the apps read as one family. Warm paper ground, navy ink, dotted rules.
+so all the apps read as one family: the same tokens, components, type, spacing
+and dotted rules. QuietFeed alone is dark only, in the "Navy night" palette the
+developer chose: navy-tinted charcoal ground, cool white ink, and a light
+periwinkle accent, because the family's navy has too little contrast on a dark
+ground. The launcher icon and splash keep the brand navy and paper
+(`brand_navy`, `brand_paper` in `colors.xml`).
 
 ## Colors — `ui/theme/AppColors.kt`
 
 | Token | Hex | Use |
 |---|---|---|
-| `primary` | `#2E3A72` | navy — buttons, focus, active icons |
-| `primaryOn` | `#FFFFFF` | text on primary |
-| `danger` | `#B3352A` | errors, delete, the new-videos dot |
-| `success` | `#1B6B4F` | confirmations |
-| `surfaceBase` | `#FAF8F3` | scaffold ground |
-| `surfaceCard` | `#FFFDF8` | cards, sheets |
-| `surfaceField` | `#EDE8DA` | text field fill |
-| `surfaceSunken` | `#F3F0E8` | disabled fill, empty state circle |
-| `surfaceInverse` | `#1F2233` | snackbar |
-| `divider` | `#E8E3D8` | card borders, hairlines |
-| `dividerStrong` | `#D6D0C2` | dotted dividers |
-| `textPrimary` | `#1A1A18` | values, headings |
-| `textSecondary` | `#5E5E57` | labels, captions, the spinner in a busy button |
-| `textTertiary` | `#696964` | empty state icon |
-| `textDisabled` | `#B5B3AA` | disabled text |
+| `primary` | `#A3AEEB` | periwinkle — buttons, focus, active icons, selected tile border |
+| `primaryOn` | `#12141C` | text and spinner on primary |
+| `danger` | `#EF7B70` | inline errors, danger buttons, the new-videos dot |
+| `dangerSurface` | `#4A2328` | failure snackbar |
+| `successSurface` | `#1E3B30` | success snackbar |
+| `surfaceBase` | `#12141C` | scaffold ground, window background, sheet scrim |
+| `surfaceCard` | `#1A1D28` | cards, sheets |
+| `surfaceField` | `#242836` | text field fill |
+| `surfaceSunken` | `#1F2230` | disabled fill, selected tile, empty state circle |
+| `surfaceInverse` | `#2D3142` | neutral snackbar |
+| `divider` | `#282C3A` | card borders, hairlines |
+| `dividerStrong` | `#363B4D` | dotted dividers |
+| `textPrimary` | `#ECEAF2` | values, headings, snackbar text |
+| `textSecondary` | `#A2A4B3` | labels, captions, the spinner in a busy button |
+| `textTertiary` | `#868899` | empty state icon |
+| `textDisabled` | `#555869` | disabled text |
 
 `AppColors` is an `object` of `Color` vals in name order. The Material
-`lightColorScheme` in `QuietFeedTheme` maps every slot onto these tokens exactly
-as `DebitterTheme` does, so no Material default colour can leak into a
-component. Text selection uses `primary` at `SELECTION_ALPHA` 0.24.
+`darkColorScheme` in `QuietFeedTheme` maps every slot onto these tokens, so no
+Material default colour can leak into a component. Snackbars use tinted dark
+surfaces with `textPrimary`, not the bright `danger` as a fill, so their text
+stays readable. The window theme is `android:Theme.Material.NoActionBar` on
+`surface_base`, and `MainActivity` uses `SystemBarStyle.dark`, so the status and
+navigation bar icons are light. Text selection uses `primary` at
+`SELECTION_ALPHA` 0.24.
 
 ## Spacing and sizing — `ui/theme/AppSpacing.kt`
 
@@ -343,7 +364,7 @@ Scale `xs 4, sm 8, md 12, lg 16, xl 24`.
 `hairline 1`. `buttonHeight` is a computed alias of `controlHeight`, so a button
 and a field can never drift apart.
 Radii: `radiusField 10`, `radiusCard 12`, `radiusButton 50` (fully rounded pill).
-Icons: `iconEmptyState 32`, `emptyStateIcon 80`. Indicators:
+Icons: `iconEmptyState 32`, `emptyStateIcon 80`. Edges: `fadingEdge 32`. Indicators:
 `progressIndicator 20`, `newDot 8`.
 
 The token set is trimmed to what the app uses, so an unreferenced token is dead
@@ -419,8 +440,12 @@ and every style is built by one private `style(...)` helper.
   revealing its spokes as the pull grows. A busy button shows it in place of its
   label. Never a Material progress indicator.
 - **Snackbar** (`AppSnackbarHost`, `AppSnackbarState`) — square corners,
-  `surfaceInverse` ground, `danger` for failure, `success` for a completed
-  action, max 2 lines, `SnackbarDuration.Long`. Every message is a full
+  `surfaceInverse` ground, `dangerSurface` for failure, `successSurface` for a
+  completed action, `textPrimary` text, max 2 lines, `SnackbarDuration.Long`.
+  It sits flush on the bottom edge: the host is aligned to the bottom with no
+  inset of its own, and the message carries the navigation bar padding, so the
+  snackbar's ground runs behind the navigation bar instead of floating above it
+  with the screen showing through underneath. Every message is a full
   explanation: what happened, then what to do or what it means. Never a bare
   "Saved".
 - **Empty state** (`EmptyState`, `ScreenEmptyState`) — `emptyStateIcon` circle on

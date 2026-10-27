@@ -5,22 +5,23 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 
 private const val SELECTION_ALPHA: Float = 0.24f
 
-private val QuietFeedColorScheme: ColorScheme = lightColorScheme(
+private val QuietFeedColorScheme: ColorScheme = darkColorScheme(
     background = AppColors.surfaceBase,
     error = AppColors.danger,
-    errorContainer = AppColors.danger,
-    inverseOnSurface = AppColors.primaryOn,
+    errorContainer = AppColors.dangerSurface,
+    inverseOnSurface = AppColors.textPrimary,
     inverseSurface = AppColors.surfaceInverse,
     onBackground = AppColors.textPrimary,
     onError = AppColors.primaryOn,
-    onErrorContainer = AppColors.primaryOn,
+    onErrorContainer = AppColors.textPrimary,
     onPrimary = AppColors.primaryOn,
+    onPrimaryContainer = AppColors.primaryOn,
     onSecondary = AppColors.primaryOn,
     onSurface = AppColors.textPrimary,
     onSurfaceVariant = AppColors.textSecondary,
@@ -28,7 +29,7 @@ private val QuietFeedColorScheme: ColorScheme = lightColorScheme(
     outlineVariant = AppColors.divider,
     primary = AppColors.primary,
     primaryContainer = AppColors.primary,
-    scrim = AppColors.surfaceInverse,
+    scrim = AppColors.surfaceBase,
     secondary = AppColors.primary,
     surface = AppColors.surfaceCard,
     surfaceContainer = AppColors.surfaceCard,

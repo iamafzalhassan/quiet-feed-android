@@ -61,7 +61,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 
 ## Design system
 
-QuietFeed shares one design system with my other apps: warm paper surfaces, navy ink, and a dotted divider as the signature motif. Colours, spacing and typography are tokens in `ui/theme`, with SF Pro Display for all text. Shared components (`AppTextField`, `AppButtons`, `AppListTile`, `AppTopBar`, `AppModalSheet`, `ConfirmSheet`, `TextInputSheet`, `AppSnackbar`, `AppPullToRefreshBox`, `EmptyState`, `DottedDivider`, and the iOS-style `ActivityIndicator`) live in `ui/components`. Screens never use a raw colour or a bare measurement. The launcher icon and splash screen are a single vector mark, a block Q, in paper on navy.
+QuietFeed shares one design system with my other apps: a dark navy-night palette with a periwinkle accent, and a dotted divider as the signature motif. Colours, spacing and typography are tokens in `ui/theme`, with SF Pro Display for all text. Shared components (`AppTextField`, `AppButtons`, `AppListTile`, `AppTopBar`, `AppModalSheet`, `ConfirmSheet`, `TextInputSheet`, `AppSnackbar`, `AppPullToRefreshBox`, `EmptyState`, `DottedDivider`, and the iOS-style `ActivityIndicator`) live in `ui/components`. Screens never use a raw colour or a bare measurement. The launcher icon and splash screen are a single vector mark, a block Q, in paper on navy.
 
 ## Code conventions
 

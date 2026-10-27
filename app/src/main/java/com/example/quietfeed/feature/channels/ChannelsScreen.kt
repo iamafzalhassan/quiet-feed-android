@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -45,6 +45,7 @@ import com.example.quietfeed.platform.rememberNotificationPermissionRequest
 import com.example.quietfeed.ui.components.control.PrimaryButton
 import com.example.quietfeed.ui.components.display.AppListTile
 import com.example.quietfeed.ui.components.display.AppTopBar
+import com.example.quietfeed.ui.components.display.fadingEdges
 import com.example.quietfeed.ui.components.feedback.AppPullToRefreshBox
 import com.example.quietfeed.ui.components.feedback.AppSnackbarHost
 import com.example.quietfeed.ui.components.feedback.ScreenEmptyState
@@ -80,6 +81,11 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
     LaunchedEffect(state.addedChannelName, isAddSheetOpen) {
         if (state.addedChannelName != null && !isAddSheetOpen) {
             viewModel.onEvent(ChannelsEvent.ConsumeAddedChannel)
+        }
+    }
+
+    LaunchedEffect(state.channels.isNotEmpty(), isAddSheetOpen) {
+        if (state.channels.isNotEmpty() && !isAddSheetOpen) {
             requestNotificationPermission()
         }
     }
@@ -147,7 +153,7 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                 }
             }
         }
-        AppSnackbarHost(modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), state = snackbarState)
+        AppSnackbarHost(modifier = Modifier.align(Alignment.BottomCenter), state = snackbarState)
     }
 
     if (isAddSheetOpen) {
@@ -201,10 +207,12 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
 @Composable
 private fun ChannelList(selectedChannelId: String?, channels: List<Channel>, onClickChannel: (String) -> Unit, onLongClickChannel: (String) -> Unit, modifier: Modifier = Modifier) {
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listState = rememberLazyListState()
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().fadingEdges(bottomInset = navigationBarBottom, state = listState),
         contentPadding = PaddingValues(bottom = AppSpacing.xl + navigationBarBottom, end = AppSpacing.screenPadding, start = AppSpacing.screenPadding, top = AppSpacing.lg),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
     ) {
         items(items = channels, key = { channel -> channel.id }) { channel ->

@@ -7,6 +7,7 @@ object AppSpacing {
     val cardPadding: Dp = 12.dp
     val controlHeight: Dp = 52.dp
     val emptyStateIcon: Dp = 80.dp
+    val fadingEdge: Dp = 32.dp
     val hairline: Dp = 1.dp
     val iconEmptyState: Dp = 32.dp
     val lg: Dp = 16.dp
