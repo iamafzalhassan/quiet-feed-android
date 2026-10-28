@@ -280,6 +280,11 @@ reason.
   asked and silently without notifications. If it is denied, nothing is posted
   and the system settings are the way back. Videos found by a sync the user can
   see (opening the app, the Sync button) never notify; they show the red dot.
+- **Release builds are signed with the debug key** (`signingConfigs.getByName("debug")`),
+  at the developer's request: the app is sideloaded and never published, so
+  no release keystore is kept. Debug and release builds therefore install over
+  each other. The debug key lives on the build machine, so a build from another
+  machine needs an uninstall first; export the channel list before that.
 - **Release builds are shrunk with R8** (`isMinifyEnabled`, `isShrinkResources`),
   as in `Evenly`, because `material-icons-extended` is otherwise shipped whole.
   `proguard-rules.pro` is empty: OkHttp, Room and WorkManager ship their own
