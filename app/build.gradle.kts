@@ -69,4 +69,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.kxml2)
+    testImplementation(libs.org.json)
 }

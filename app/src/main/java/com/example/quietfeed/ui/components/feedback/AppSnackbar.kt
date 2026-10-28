@@ -61,6 +61,8 @@ fun rememberAppSnackbarState(): AppSnackbarState = remember { AppSnackbarState(S
 
 @Stable
 class AppSnackbarState(val hostState: SnackbarHostState) {
+    suspend fun showBrief(message: String) = show(message = message, tone = SnackTone.NEUTRAL)
+
     suspend fun showError(message: String) = show(message = message, tone = SnackTone.ERROR)
 
     suspend fun showSuccess(message: String) = show(message = message, tone = SnackTone.SUCCESS)

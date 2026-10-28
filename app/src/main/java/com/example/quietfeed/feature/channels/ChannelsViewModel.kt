@@ -3,6 +3,7 @@ package com.example.quietfeed.feature.channels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.quietfeed.common.STATE_STOP_TIMEOUT_MILLIS
+import com.example.quietfeed.common.attempt
 import com.example.quietfeed.data.repository.ChannelRepository
 import com.example.quietfeed.data.sync.FeedSync
 import com.example.quietfeed.data.sync.SyncResult
@@ -28,6 +29,8 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
             ChannelsEvent.ConsumeAddedChannel -> screenState.update { state -> state.copy(addedChannelName = null, feedback = state.addedChannelName?.let { name -> ChannelsFeedback.ChannelAdded(name) } ?: state.feedback) }
             ChannelsEvent.DismissAddError -> screenState.update { state -> state.copy(addError = null) }
             ChannelsEvent.DismissFeedback -> screenState.update { state -> state.copy(feedback = null) }
+            is ChannelsEvent.ExportChannels -> exportChannels(event.uri)
+            is ChannelsEvent.ImportChannels -> importChannels(event.uri)
             is ChannelsEvent.RemoveChannel -> removeChannel(event.channelId)
             is ChannelsEvent.RenameChannel -> renameChannel(channelId = event.channelId, name = event.name)
             ChannelsEvent.Sync -> sync()
@@ -47,6 +50,29 @@ class ChannelsViewModel(private val channelRepository: ChannelRepository, privat
                     is AddChannelResult.Added -> state.copy(isAdding = false, addedChannelName = result.channel.name)
                     is AddChannelResult.Rejected -> state.copy(isAdding = false, addError = result.error)
                 }
+            }
+        }
+    }
+
+    private fun exportChannels(uri: String) {
+        viewModelScope.launch {
+            val feedback = attempt { channelRepository.exportChannels(uri) }.fold(onFailure = { ChannelsFeedback.ExportFailed }, onSuccess = { count -> ChannelsFeedback.ChannelsExported(count) })
+            screenState.update { state -> state.copy(feedback = feedback) }
+        }
+    }
+
+    private fun importChannels(uri: String) {
+        viewModelScope.launch {
+            val outcome = attempt { channelRepository.importChannels(uri) }
+            val imported = outcome.getOrNull()
+            val feedback = when {
+                outcome.isFailure -> ChannelsFeedback.ImportFailed
+                imported == null -> ChannelsFeedback.ImportInvalid
+                else -> ChannelsFeedback.ChannelsImported(imported)
+            }
+            screenState.update { state -> state.copy(feedback = feedback) }
+            if (imported != null && imported > 0) {
+                feedSync.syncAll()
             }
         }
     }

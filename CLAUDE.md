@@ -80,12 +80,13 @@ app/src/main/java/com/example/quietfeed/
         channel/                 Channel, ChannelReference, ChannelReferenceParser, AddChannelResult, AddChannelError
         video/                   Video
     data/
-        local/                   QuietFeedDatabase
+        local/                   QuietFeedDatabase, SyncPreferences
         local/entity/            Room entities and query projections
         local/dao/               Room DAOs
         remote/                  YouTubeClient, FeedParser, ChannelPageParser, FeedEntry, remote exceptions
         repository/              repositories and their entity-to-model mappings
         sync/                    FeedSync, SyncReport, ChannelUploads, SyncResult, newSince
+        backup/                  ChannelBackup (JSON format), BackupFiles (Storage Access Framework IO)
     platform/                    VideoLauncher, NotificationPermission
     ui/
         theme/                   AppColors, AppSpacing, AppTextStyles, QuietFeedTheme
@@ -218,6 +219,25 @@ reason.
   already added (checked before any network call for a channel id, and by the
   primary key for a handle), not found (`404` or no id on the channel page),
   offline (any `IOException`) and failed (anything else).
+- **The channel list can be exported and imported**, outside the spec. A
+  More icon at the right of the top bar opens `ChannelBackupSheet` with Export
+  and Import tiles; each closes the sheet, then opens the system file picker
+  through the Storage Access Framework (`CreateDocument` for
+  `quietfeed-channels-<date>.json`, `OpenDocument` accepting JSON, octet-stream
+  and plain text), so no storage permission is needed. `ChannelBackup` writes
+  `{"app":"QuietFeed","version":1,"exportedAt":…,"channels":[{"id","name","addedAt"}]}`
+  with `org.json` by hand, and decodes it totally: anything that is not a
+  QuietFeed file is rejected, invalid ids and blank names are dropped,
+  duplicates collapse, names are capped, and a missing or bad `addedAt` falls
+  back to the import time. Import merges: each channel keeps its exported
+  cutoff, so a restored channel shows the videos it would have shown on the old
+  phone, already-followed channels are skipped by the primary key, and a full
+  sync runs when anything was added. No network check is made on import,
+  because the ids came from a previous add. `BackupFiles` does the reading and
+  writing off the main thread, so the ViewModel only ever handles URI strings.
+  Exporting an empty list explains itself instead of writing an empty file.
+  Unit tests use `org.json:json` because the Android stub cannot parse on the
+  JVM.
 - **A Sync button replaces pull to refresh**, a deliberate departure from the
   spec. The channel list's top bar has a Sync icon left of the add icon; while
   any sync runs (opening the app, adding a channel, the button, the background

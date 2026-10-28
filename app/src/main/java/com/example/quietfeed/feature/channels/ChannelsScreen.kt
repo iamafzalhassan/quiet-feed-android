@@ -1,6 +1,8 @@
 package com.example.quietfeed.feature.channels
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
@@ -45,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.quietfeed.R
 import com.example.quietfeed.domain.channel.Channel
 import com.example.quietfeed.feature.channels.components.AddChannelSheet
+import com.example.quietfeed.feature.channels.components.ChannelBackupSheet
 import com.example.quietfeed.platform.rememberNotificationPermissionRequest
 import com.example.quietfeed.ui.components.control.PrimaryButton
 import com.example.quietfeed.ui.components.display.AppListTile
@@ -64,8 +68,15 @@ import com.example.quietfeed.ui.theme.AppSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 
 private const val CLOCK_TICK_MILLIS: Long = 60_000L
+
+private const val BACKUP_FILE_EXTENSION: String = ".json"
+private const val BACKUP_FILE_PREFIX: String = "quietfeed-channels-"
+private const val BACKUP_MIME_TYPE: String = "application/json"
+
+private val backupOpenTypes: Array<String> = arrayOf(BACKUP_MIME_TYPE, "application/octet-stream", "text/plain")
 
 @Composable
 fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel, modifier: Modifier = Modifier) {
@@ -74,7 +85,18 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
     val scope = rememberCoroutineScope()
     val snackbarState = rememberAppSnackbarState()
     val requestNotificationPermission = rememberNotificationPermissionRequest()
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE)) { uri ->
+        if (uri != null) {
+            viewModel.onEvent(ChannelsEvent.ExportChannels(uri.toString()))
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            viewModel.onEvent(ChannelsEvent.ImportChannels(uri.toString()))
+        }
+    }
     var isAddSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var isBackupSheetOpen by rememberSaveable { mutableStateOf(false) }
     var selectedChannelId by rememberSaveable { mutableStateOf<String?>(null) }
     var channelSheet by rememberSaveable { mutableStateOf<ChannelSheet?>(null) }
     val selectedChannel = state.channels.firstOrNull { channel -> channel.id == selectedChannelId }
@@ -108,6 +130,15 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                 is ChannelsFeedback.ChannelAdded -> snackbarState.showSuccess(resources.getString(R.string.channel_added, feedback.name))
                 is ChannelsFeedback.ChannelRemoved -> snackbarState.showSuccess(resources.getString(R.string.channel_removed, feedback.name))
                 is ChannelsFeedback.ChannelRenamed -> snackbarState.showSuccess(resources.getString(R.string.channel_renamed, feedback.name))
+                is ChannelsFeedback.ChannelsExported -> snackbarState.showSuccess(resources.getQuantityString(R.plurals.channels_exported, feedback.count, feedback.count))
+                is ChannelsFeedback.ChannelsImported -> if (feedback.count == 0) {
+                    snackbarState.showBrief(resources.getString(R.string.import_nothing_new))
+                } else {
+                    snackbarState.showSuccess(resources.getQuantityString(R.plurals.channels_imported, feedback.count, feedback.count))
+                }
+                ChannelsFeedback.ExportFailed -> snackbarState.showError(resources.getString(R.string.export_failed))
+                ChannelsFeedback.ImportFailed -> snackbarState.showError(resources.getString(R.string.import_failed))
+                ChannelsFeedback.ImportInvalid -> snackbarState.showError(resources.getString(R.string.import_invalid))
                 ChannelsFeedback.SyncFailed -> snackbarState.showError(resources.getString(R.string.sync_failed))
                 ChannelsFeedback.SyncOffline -> snackbarState.showError(resources.getString(R.string.sync_offline))
             }
@@ -130,6 +161,9 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                     }
                     IconButton(onClick = openAddSheet) {
                         Icon(contentDescription = stringResource(R.string.action_add_channel), imageVector = Icons.Outlined.Add, tint = AppColors.primary)
+                    }
+                    IconButton(onClick = { isBackupSheetOpen = true }) {
+                        Icon(contentDescription = stringResource(R.string.action_backup), imageVector = Icons.Outlined.MoreVert, tint = AppColors.primary)
                     }
                 }
             } else {
@@ -185,6 +219,24 @@ fun ChannelsScreen(onOpenChannel: (String) -> Unit, viewModel: ChannelsViewModel
                 if (state.addError != null) {
                     viewModel.onEvent(ChannelsEvent.DismissAddError)
                 }
+            },
+        )
+    }
+
+    if (isBackupSheetOpen) {
+        ChannelBackupSheet(
+            onDismiss = { isBackupSheetOpen = false },
+            onExport = {
+                isBackupSheetOpen = false
+                if (state.channels.isEmpty()) {
+                    scope.launch { snackbarState.showError(resources.getString(R.string.export_empty)) }
+                } else {
+                    exportLauncher.launch("$BACKUP_FILE_PREFIX${LocalDate.now()}$BACKUP_FILE_EXTENSION")
+                }
+            },
+            onImport = {
+                isBackupSheetOpen = false
+                importLauncher.launch(backupOpenTypes)
             },
         )
     }

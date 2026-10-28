@@ -1,6 +1,7 @@
 package com.example.quietfeed.app
 
 import android.content.Context
+import com.example.quietfeed.data.backup.BackupFiles
 import com.example.quietfeed.data.local.QuietFeedDatabase
 import com.example.quietfeed.data.local.SyncPreferences
 import com.example.quietfeed.data.local.buildQuietFeedDatabase
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit
 private const val CALL_TIMEOUT_SECONDS: Long = 20L
 
 class AppGraph(context: Context) {
+    private val backupFiles: BackupFiles = BackupFiles(context.applicationContext)
+
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val httpClient: OkHttpClient = OkHttpClient.Builder().callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS).build()
@@ -30,7 +33,7 @@ class AppGraph(context: Context) {
 
     private val youTubeClient: YouTubeClient = YouTubeClient(channelVideosReader = ChannelVideosReader(), httpClient = httpClient)
 
-    val channelRepository: ChannelRepository by lazy { ChannelRepository(channelDao = database.channelDao(), youTubeClient = youTubeClient) }
+    val channelRepository: ChannelRepository by lazy { ChannelRepository(backupFiles = backupFiles, channelDao = database.channelDao(), youTubeClient = youTubeClient) }
 
     val feedSync: FeedSync by lazy { FeedSync(channelDao = database.channelDao(), scope = scope, syncPreferences = syncPreferences, videoDao = database.videoDao(), youTubeClient = youTubeClient) }
 

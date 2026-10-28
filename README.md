@@ -22,6 +22,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 - **History that grows**: a video stays after it drops out of YouTube's feed.
 - **Selection mode**: long-press a channel to rename or remove it from the top bar. Removing a channel deletes its videos.
 - **Clear a channel**: wipe its saved videos and start it over from now.
+- **Export and import**: save your channel list to a JSON file anywhere you like, and import it on another phone. Each channel keeps its name and the moment you first added it; channels you already follow are skipped.
 - **Opens in YouTube**: tapping a video opens the YouTube app, or the browser if it isn't installed.
 
 ## Architecture
@@ -43,7 +44,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 
 - **Room**, with a `channels` table and a `videos` table. Videos cascade-delete with their channel, and the schema is exported to `app/schemas`.
 - **Seen state and the starting point** are stored per video and per channel, so the red dot and the cutoff survive restarts.
-- **No backups.** `allowBackup` is off; everything stays on the device.
+- **No system backups.** `allowBackup` is off, so nothing goes to Google's cloud; use Export to keep your channel list.
 
 ## Tech stack
 
@@ -81,6 +82,7 @@ app/src/main/java/com/example/quietfeed/
     data/remote/         YouTubeClient, FeedParser, ChannelPageParser, ChannelVideosReader, NewPipeDownloader
     data/repository/     Channel and video repositories, mapping
     data/sync/           FeedSync, SyncReport, the new-video filter
+    data/backup/         Channel list export and import
     platform/            VideoLauncher, NotificationPermission
     ui/theme/            AppColors, AppSpacing, AppTextStyles, QuietFeedTheme
     ui/components/       Shared components: control/, display/, feedback/, sheet/
@@ -108,6 +110,7 @@ JUnit 4 tests live in `app/src/test/java`, mirroring the package of the code the
 - **`data/remote/ChannelPageParserTest`**: the canonical link wins, the identifier and `externalId` are fallbacks, and an echoed `channelId` alone never counts as a channel.
 - **`data/remote/ChannelVideosReaderTest`**: extractor results become feed entries, while Shorts, undated items and URLs without a video ID are dropped.
 - **`data/remote/FeedEntryTest`**: Shorts links are recognised.
+- **`data/backup/ChannelBackupTest`**: an export reads back exactly, other files are rejected, invalid or duplicate channels are dropped, and a missing added time falls back to the import time.
 - **`data/sync/NewEntriesTest`**: only videos published after the starting point and not already stored are kept, without duplicates.
 - **`ui/format/DateFormatTest`**: dates read as `14 Sep 2026` in the given time zone.
 - **`common/AttemptsTest`**: failures are captured and cancellation is never swallowed.
@@ -117,5 +120,4 @@ Run them with `./gradlew :app:testDebugUnitTest`.
 ## Roadmap
 
 - GitHub Actions CI for tests and builds
-- Export and import the channel list
 - Search across saved video titles

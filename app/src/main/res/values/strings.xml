@@ -13,6 +13,26 @@
     <string name="action_rename">Rename</string>
     <string name="action_save">Save</string>
 
+    <string name="action_backup">Back up or restore channels</string>
+    <string name="backup_export_subtitle">Save your channel list to a file</string>
+    <string name="backup_export_title">Export channels</string>
+    <string name="backup_import_subtitle">Add channels from a QuietFeed file</string>
+    <string name="backup_import_title">Import channels</string>
+    <string name="backup_title">Back up channels</string>
+    <string name="export_empty">There are no channels to export yet. Add one first.</string>
+    <string name="export_failed">The file couldn\'t be saved. Try again or pick another place.</string>
+    <string name="import_failed">The file couldn\'t be read. Try again or pick another one.</string>
+    <string name="import_invalid">That file isn\'t a QuietFeed channel list.</string>
+    <string name="import_nothing_new">Nothing new to import. You already follow every channel in that file.</string>
+    <plurals name="channels_exported">
+        <item quantity="one">Exported %d channel. Keep the file somewhere safe.</item>
+        <item quantity="other">Exported %d channels. Keep the file somewhere safe.</item>
+    </plurals>
+    <plurals name="channels_imported">
+        <item quantity="one">Imported %d channel. Its videos since it was first added will show up shortly.</item>
+        <item quantity="other">Imported %d channels. Their videos since they were first added will show up shortly.</item>
+    </plurals>
+
     <string name="add_channel_hint">Paste a channel ID, a channel URL or an @handle.</string>
     <string name="add_channel_title">Add channel</string>
     <string name="add_error_already_added">You already follow this channel.</string>

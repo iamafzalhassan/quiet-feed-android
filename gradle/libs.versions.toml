@@ -13,6 +13,7 @@ lifecycle = "2.11.0"
 navigationCompose = "2.10.0"
 newpipeExtractor = "v0.26.5"
 okhttp = "5.5.0"
+orgJson = "20260814"
 room = "2.8.5"
 work = "2.12.0"
 
@@ -40,6 +41,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 kxml2 = { group = "net.sf.kxml", name = "kxml2", version.ref = "kxml2" }
 newpipe-extractor = { group = "com.github.TeamNewPipe", name = "NewPipeExtractor", version.ref = "newpipeExtractor" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

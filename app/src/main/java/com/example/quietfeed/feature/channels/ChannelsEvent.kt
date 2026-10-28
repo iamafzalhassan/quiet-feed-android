@@ -9,6 +9,10 @@ sealed interface ChannelsEvent {
 
     data object DismissFeedback : ChannelsEvent
 
+    data class ExportChannels(val uri: String) : ChannelsEvent
+
+    data class ImportChannels(val uri: String) : ChannelsEvent
+
     data class RemoveChannel(val channelId: String) : ChannelsEvent
 
     data class RenameChannel(val channelId: String, val name: String) : ChannelsEvent
