@@ -42,6 +42,15 @@ class ChannelVideosReaderTest {
         assertNull(item.toFeedEntry())
     }
 
+    @Test
+    fun uploadedWithinADayDropsOlderApproximateDates() {
+        val now = publishedAt.plusSeconds(23 * 60 * 60)
+        val recent = FeedEntry(link = "https://www.youtube.com/watch?v=$VIDEO_ID", title = "Recent", videoId = VIDEO_ID, publishedAt = publishedAt)
+        val old = FeedEntry(link = "https://www.youtube.com/watch?v=aaaaaaaaaaa", title = "Old", videoId = "aaaaaaaaaaa", publishedAt = publishedAt.minusSeconds(2 * 60 * 60))
+
+        assertEquals(listOf(recent), listOf(recent, old).uploadedWithinADay(now))
+    }
+
     private fun item(url: String): StreamInfoItem {
         val item = StreamInfoItem(ServiceList.YouTube.serviceId, url, "Title", StreamType.VIDEO_STREAM)
         item.uploadDate = DateWrapper(publishedAt, true)

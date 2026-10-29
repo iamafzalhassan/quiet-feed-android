@@ -6,9 +6,9 @@ import com.example.quietfeed.data.local.entity.ChannelSummaryRow
 import com.example.quietfeed.domain.channel.Channel
 import java.time.Instant
 
-fun BackupChannel.toChannelEntity(): ChannelEntity = ChannelEntity(addedAt = addedAt.toEpochMilli(), channelId = id, name = name)
+fun BackupChannel.toChannelEntity(addedAt: Instant): ChannelEntity = ChannelEntity(addedAt = addedAt.toEpochMilli(), channelId = id, name = name)
 
-fun ChannelEntity.toBackupChannel(): BackupChannel = BackupChannel(id = channelId, name = name, addedAt = Instant.ofEpochMilli(addedAt))
+fun ChannelEntity.toBackupChannel(): BackupChannel = BackupChannel(id = channelId, name = name)
 
 fun ChannelEntity.toChannel(): Channel = Channel(hasNewVideos = false, id = channelId, name = name, addedAt = Instant.ofEpochMilli(addedAt))
 

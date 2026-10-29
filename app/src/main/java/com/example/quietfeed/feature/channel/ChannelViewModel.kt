@@ -2,7 +2,6 @@ package com.example.quietfeed.feature.channel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.quietfeed.common.STATE_STOP_TIMEOUT_MILLIS
 import com.example.quietfeed.data.repository.ChannelRepository
 import com.example.quietfeed.data.repository.VideoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,8 +24,8 @@ class ChannelViewModel(private val channelId: String, channelRepository: Channel
             }
         },
         feedback,
-    ) { name, videos, currentFeedback -> ChannelUiState(isLoading = false, channelName = name.orEmpty(), videos = videos, feedback = currentFeedback) }
-        .stateIn(initialValue = ChannelUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed(STATE_STOP_TIMEOUT_MILLIS))
+    ) { name, videos, currentFeedback -> ChannelUiState(isLoading = false, isMissing = name == null, channelName = name.orEmpty(), videos = videos, feedback = currentFeedback) }
+        .stateIn(initialValue = ChannelUiState(), scope = viewModelScope, started = SharingStarted.WhileSubscribed())
 
     fun onEvent(event: ChannelEvent) {
         when (event) {

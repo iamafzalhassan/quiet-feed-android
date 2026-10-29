@@ -40,13 +40,14 @@ class ChannelRepository(private val backupFiles: BackupFiles, private val channe
 
     suspend fun exportChannels(uri: String): Int {
         val channels = channelDao.findChannels()
-        backupFiles.write(text = ChannelBackup.encode(channels = channels.map { channel -> channel.toBackupChannel() }, exportedAt = Instant.now()), uri = uri)
+        backupFiles.write(text = ChannelBackup.encode(channels.map { channel -> channel.toBackupChannel() }), uri = uri)
         return channels.size
     }
 
     suspend fun importChannels(uri: String): Int? {
-        val channels = ChannelBackup.decode(importedAt = Instant.now(), text = backupFiles.read(uri)) ?: return null
-        return channels.count { channel -> channelDao.insertChannel(channel.toChannelEntity()) != -1L }
+        val channels = ChannelBackup.decode(backupFiles.read(uri)) ?: return null
+        val importedAt = Instant.now()
+        return channels.count { channel -> channelDao.insertChannel(channel.toChannelEntity(importedAt)) != -1L }
     }
 
     fun observeChannelName(channelId: String): Flow<String?> = channelDao.observeChannelName(channelId)

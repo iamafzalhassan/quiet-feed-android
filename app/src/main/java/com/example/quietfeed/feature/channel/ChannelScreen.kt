@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,6 +56,13 @@ fun ChannelScreen(onBack: () -> Unit, viewModel: ChannelViewModel, modifier: Mod
     val snackbarState = rememberAppSnackbarState()
     val videoLauncher = rememberVideoLauncher()
     var isClearSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val currentOnBack by rememberUpdatedState(onBack)
+
+    LaunchedEffect(state.isMissing) {
+        if (state.isMissing) {
+            currentOnBack()
+        }
+    }
 
     LaunchedEffect(state.feedback) {
         val feedback = state.feedback ?: return@LaunchedEffect
@@ -123,7 +131,7 @@ private fun VideoList(videos: List<Video>, onOpenVideo: (Video) -> Unit, modifie
         state = listState,
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
     ) {
-        items(items = videos, key = { video -> video.id }) { video ->
+        items(videos) { video ->
             AppListTile(
                 onClick = { onOpenVideo(video) },
                 subtitle = DateFormat.formatShort(video.publishedAt),

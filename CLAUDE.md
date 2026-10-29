@@ -174,9 +174,14 @@ reason.
   (`ChannelVideosReader`), the library the NewPipe app uses, with no API key and
   no account. The feed stays first because it is light and its dates are exact.
   The Videos tab gives YouTube's relative dates ("3 hours ago"), converted by the
-  extractor into approximate instants, so a video uploaded within about one
-  date unit of the moment a channel was added can fall on the wrong side of the
-  cutoff; everything older or newer is unaffected. The Videos tab holds no
+  extractor into approximate instants that drift later as the unit coarsens
+  (days, weeks, months). Left alone, an old video would eventually drift past
+  the cutoff and arrive as new, with a red dot and a notification, so
+  `uploadedWithinADay` keeps only fallback entries less than a day old, where
+  the unit is minutes or hours and the error is at most an hour. Uploads are
+  normally caught within 30 minutes, and anything older that the fallback
+  skips is still found by the RSS feed, with exact dates, once it answers. The
+  Videos tab holds no
   Shorts, and items flagged as short-form or without a date are dropped. Only
   when both sources fail is the channel marked as not checked, and an error
   never means "channel not found".
@@ -225,14 +230,15 @@ reason.
   through the Storage Access Framework (`CreateDocument` for
   `quietfeed-channels-<date>.json`, `OpenDocument` accepting JSON, octet-stream
   and plain text), so no storage permission is needed. `ChannelBackup` writes
-  `{"app":"QuietFeed","version":1,"exportedAt":…,"channels":[{"id","name","addedAt"}]}`
-  with `org.json` by hand, and decodes it totally: anything that is not a
-  QuietFeed file is rejected, invalid ids and blank names are dropped,
-  duplicates collapse, names are capped, and a missing or bad `addedAt` falls
-  back to the import time. Import merges: each channel keeps its exported
-  cutoff, so a restored channel shows the videos it would have shown on the old
-  phone, already-followed channels are skipped by the primary key, and a full
-  sync runs when anything was added. No network check is made on import,
+  `{"app":"QuietFeed","version":2,"channels":[{"id","name"}]}` with `org.json`
+  by hand, and decodes it totally: anything that is not a QuietFeed file is
+  rejected, invalid ids and blank names are dropped, duplicates collapse, and
+  names are capped. The file holds no times, at the developer's request:
+  every imported channel's cutoff is the moment of import, exactly like a
+  freshly added channel, so an import never brings back older videos; the
+  `addedAt` and `exportedAt` of version 1 files are ignored. Import merges:
+  already-followed channels are skipped by the primary key, and a full sync
+  runs when anything was added. No network check is made on import,
   because the ids came from a previous add. `BackupFiles` does the reading and
   writing off the main thread, so the ViewModel only ever handles URI strings.
   Exporting an empty list explains itself instead of writing an empty file.
@@ -250,9 +256,22 @@ reason.
   The time is stored in `SyncPreferences` after every full sync that was not
   offline, so it survives restarts and includes background syncs. The status
   line is hidden in selection mode and before the first check.
-- **Sync** runs every time the app comes to the foreground, from the Sync button,
+- **Sync** runs when the app comes to the foreground, from the Sync button,
   for the new channel right after it is added, and every 30 minutes through
-  WorkManager with a connected-network constraint. `FeedSync` runs in the app
+  WorkManager with a connected-network constraint. The foreground sync
+  (`syncIfStale`) is skipped when the last check is under five minutes old, so
+  rotating the screen or coming back from the YouTube app does not re-fetch
+  every channel. Before inserting, each channel is re-read: a channel removed
+  mid-sync is skipped instead of failing on the foreign key, and a channel
+  cleared mid-sync uses its new cutoff, so nothing old is inserted or
+  announced. The worker runs its sync and notification step as
+  `NonCancellable`, because a worker WorkManager stops would otherwise insert
+  videos without ever announcing them. `MainActivity` is exported, so the
+  channel id in an incoming intent is checked against `CHANNEL_ID_PATTERN`
+  before navigating, and the channel screen closes itself if its channel no
+  longer exists (a notification for a removed channel). The channel screen's
+  state stops the moment it is hidden (`WhileSubscribed()` with no delay), so
+  a background sync never marks a video seen that nobody saw. `FeedSync` runs in the app
   scope so leaving a screen never cancels it, and a second full sync joins the
   one already running. One failing channel never stops the others. Channels sync
   in parallel, at most `MAX_PARALLEL_SYNCS` (4) at a time through one shared
@@ -312,6 +331,13 @@ reason.
   behind.
 - **Video titles may take three lines** (`VIDEO_TITLE_MAX_LINES`), because a
   single line hides most titles. The date line under it stays single-line.
+- **Lists keep their scroll position by index, not by item.** The channel and
+  video `LazyColumn`s take no `key`. With keys, Compose keeps the previously
+  first item in view when the data changes, so a sync that moved another
+  channel to the top, or a new video arriving at the top, left the user
+  scrolled down past it. Without keys a list at the top stays at the top and
+  shows the newest item. Nothing depends on item keys: selection is held by
+  channel id, and items carry no per-item state or animations.
 - **Scrolling lists fade at their edges** (`Modifier.fadingEdges` in
   `ui/components/display/FadingEdges.kt`), on the channel list and the video
   list. The list is drawn offscreen and masked with `BlendMode.DstIn`, so the

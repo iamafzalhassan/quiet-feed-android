@@ -29,8 +29,8 @@
         <item quantity="other">Exported %d channels. Keep the file somewhere safe.</item>
     </plurals>
     <plurals name="channels_imported">
-        <item quantity="one">Imported %d channel. Its videos since it was first added will show up shortly.</item>
-        <item quantity="other">Imported %d channels. Their videos since they were first added will show up shortly.</item>
+        <item quantity="one">Imported %d channel. New uploads will show up from now on.</item>
+        <item quantity="other">Imported %d channels. New uploads will show up from now on.</item>
     </plurals>
 
     <string name="add_channel_hint">Paste a channel ID, a channel URL or an @handle.</string>

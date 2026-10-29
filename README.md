@@ -22,7 +22,7 @@ There is no Google account, no subscription, no API key and no server. Channels 
 - **History that grows**: a video stays after it drops out of YouTube's feed.
 - **Selection mode**: long-press a channel to rename or remove it from the top bar. Removing a channel deletes its videos.
 - **Clear a channel**: wipe its saved videos and start it over from now.
-- **Export and import**: save your channel list to a JSON file anywhere you like, and import it on another phone. Each channel keeps its name and the moment you first added it; channels you already follow are skipped.
+- **Export and import**: save your channel list to a JSON file anywhere you like, and import it on another phone. Each channel keeps your name for it and starts fresh from the moment you import it; channels you already follow are skipped.
 - **Opens in YouTube**: tapping a video opens the YouTube app, or the browser if it isn't installed.
 
 ## Architecture
@@ -110,7 +110,7 @@ JUnit 4 tests live in `app/src/test/java`, mirroring the package of the code the
 - **`data/remote/ChannelPageParserTest`**: the canonical link wins, the identifier and `externalId` are fallbacks, and an echoed `channelId` alone never counts as a channel.
 - **`data/remote/ChannelVideosReaderTest`**: extractor results become feed entries, while Shorts, undated items and URLs without a video ID are dropped.
 - **`data/remote/FeedEntryTest`**: Shorts links are recognised.
-- **`data/backup/ChannelBackupTest`**: an export reads back exactly, other files are rejected, invalid or duplicate channels are dropped, and a missing added time falls back to the import time.
+- **`data/backup/ChannelBackupTest`**: an export reads back exactly and holds no times, other files are rejected, invalid or duplicate channels are dropped, and times in older files are ignored.
 - **`data/sync/NewEntriesTest`**: only videos published after the starting point and not already stored are kept, without duplicates.
 - **`ui/format/DateFormatTest`**: dates read as `14 Sep 2026` in the given time zone.
 - **`common/AttemptsTest`**: failures are captured and cancellation is never swallowed.

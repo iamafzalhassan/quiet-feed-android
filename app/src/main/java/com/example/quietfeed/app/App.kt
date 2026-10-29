@@ -35,7 +35,7 @@ fun App(openChannelId: String?, onChannelOpened: () -> Unit, graph: AppGraph) {
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            graph.feedSync.syncAll()
+            graph.feedSync.syncIfStale()
         }
     }
 

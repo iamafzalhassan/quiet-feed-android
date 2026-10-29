@@ -27,11 +27,14 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import java.io.IOException
+import java.time.Duration
 import java.time.Instant
 
 private const val MAX_PARALLEL_SYNCS: Int = 4
 
 private const val NOT_INSERTED: Long = -1L
+
+private val staleAfter: Duration = Duration.ofMinutes(5)
 
 class FeedSync(private val channelDao: ChannelDao, private val scope: CoroutineScope, private val syncPreferences: SyncPreferences, private val videoDao: VideoDao, private val youTubeClient: YouTubeClient) {
     private val activeSyncs: MutableStateFlow<Int> = MutableStateFlow(0)
@@ -48,6 +51,13 @@ class FeedSync(private val channelDao: ChannelDao, private val scope: CoroutineS
 
     fun requestChannelSync(channelId: String) {
         scope.launch { syncChannels(listOfNotNull(channelDao.findChannel(channelId))) }
+    }
+
+    suspend fun syncIfStale() {
+        val lastCheckedAt = syncPreferences.lastCheckedAt()
+        if (lastCheckedAt == null || Duration.between(lastCheckedAt, Instant.now()) >= staleAfter) {
+            syncAll()
+        }
     }
 
     suspend fun syncAll(): SyncReport = mutex.withLock { running?.takeIf { it.isActive } ?: scope.async { checkAll() }.also { running = it } }.await()
@@ -82,8 +92,10 @@ class FeedSync(private val channelDao: ChannelDao, private val scope: CoroutineS
         val videos = entries.newSince(addedAtMillis = channel.addedAt, knownIds = knownIds).mapNotNull { entry ->
             attemptOrNull { youTubeClient.isShort(entry) }?.let { isShort -> entry.toVideoEntity(channelId = channel.channelId, isShort = isShort) }
         }
-        val rowIds = videoDao.insertVideos(videos)
-        val titles = videos.zip(rowIds).filter { (video, rowId) -> rowId != NOT_INSERTED && !video.isShort }.map { (video, _) -> video.title }
+        val current = channelDao.findChannel(channel.channelId) ?: return ChannelUploads(channelId = channel.channelId, channelName = channel.name, titles = emptyList())
+        val stillNew = videos.filter { video -> video.publishedAt > current.addedAt }
+        val rowIds = videoDao.insertVideos(stillNew)
+        val titles = stillNew.zip(rowIds).filter { (video, rowId) -> rowId != NOT_INSERTED && !video.isShort }.map { (video, _) -> video.title }
         return ChannelUploads(channelId = channel.channelId, channelName = channel.name, titles = titles)
     }
 }

@@ -13,6 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.quietfeed.app.App
 import com.example.quietfeed.app.NewVideoNotifier
+import com.example.quietfeed.domain.channel.CHANNEL_ID_PATTERN
+
+private val channelId: Regex = Regex(CHANNEL_ID_PATTERN)
 
 class MainActivity : ComponentActivity() {
     private var openChannelId: String? by mutableStateOf(null)
@@ -23,7 +26,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(navigationBarStyle = barStyle, statusBarStyle = barStyle)
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
-            openChannelId = intent.getStringExtra(NewVideoNotifier.EXTRA_CHANNEL_ID)
+            openChannelId = intent.channelIdExtra()
         }
         val graph = (application as QuietFeedApplication).graph
         setContent { App(graph = graph, onChannelOpened = { openChannelId = null }, openChannelId = openChannelId) }
@@ -31,6 +34,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        openChannelId = intent.getStringExtra(NewVideoNotifier.EXTRA_CHANNEL_ID)
+        openChannelId = intent.channelIdExtra()
     }
 }
+
+private fun Intent.channelIdExtra(): String? = getStringExtra(NewVideoNotifier.EXTRA_CHANNEL_ID)?.takeIf(channelId::matches)

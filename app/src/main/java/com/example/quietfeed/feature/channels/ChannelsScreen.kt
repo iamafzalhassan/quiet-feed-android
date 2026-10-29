@@ -301,7 +301,7 @@ private fun ChannelList(selectedChannelId: String?, channels: List<Channel>, onC
         state = listState,
         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
     ) {
-        items(items = channels, key = { channel -> channel.id }) { channel ->
+        items(channels) { channel ->
             AppListTile(
                 isSelected = channel.id == selectedChannelId,
                 onClick = { onClickChannel(channel.id) },

@@ -17,15 +17,15 @@ class SyncPreferences(context: Context) {
     fun observeLastCheckedAt(): Flow<Instant?> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == KEY_LAST_CHECKED_AT) {
-                trySend(readLastCheckedAt())
+                trySend(lastCheckedAt())
             }
         }
-        trySend(readLastCheckedAt())
+        trySend(lastCheckedAt())
         preferences.registerOnSharedPreferenceChangeListener(listener)
         awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
-    fun setLastCheckedAt(instant: Instant) = preferences.edit { putLong(KEY_LAST_CHECKED_AT, instant.toEpochMilli()) }
+    fun lastCheckedAt(): Instant? = if (preferences.contains(KEY_LAST_CHECKED_AT)) Instant.ofEpochMilli(preferences.getLong(KEY_LAST_CHECKED_AT, 0L)) else null
 
-    private fun readLastCheckedAt(): Instant? = if (preferences.contains(KEY_LAST_CHECKED_AT)) Instant.ofEpochMilli(preferences.getLong(KEY_LAST_CHECKED_AT, 0L)) else null
+    fun setLastCheckedAt(instant: Instant) = preferences.edit { putLong(KEY_LAST_CHECKED_AT, instant.toEpochMilli()) }
 }
